@@ -1,25 +1,47 @@
 import 'package:flutter/material.dart';
+import '../services/shared_pref_service.dart';
 import 'login_page.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final _usernameController = TextEditingController();
+  State<RegisterPage> createState() => _RegisterPageState();
+}
 
-    void _register() {
-      if (_usernameController.text.trim().isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Registrasi Berhasil, silakan login")),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => LoginPage()),
-        );
-      }
+class _RegisterPageState extends State<RegisterPage> {
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  void _register() async {
+    String username = _usernameController.text.trim();
+    String password = _passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Username dan password harus diisi!")),
+      );
+      return;
     }
+    bool isExist = await SharedPrefService.isUserExist(username);
+    if (isExist) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Username sudah terdaftar!")));
+      return;
+    }
+    await SharedPrefService.registerUser(username, password);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Registrasi berhasil, silakan login.")),
+    );
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => LoginPage()),
+    );
+  }
 
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -40,6 +62,17 @@ class RegisterPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                obscureText: true,
               ),
               SizedBox(height: 20),
               ElevatedButton(onPressed: _register, child: Text('Register')),

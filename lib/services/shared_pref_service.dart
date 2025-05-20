@@ -4,6 +4,7 @@ import '../models/restaurant.dart';
 
 class SharedPrefService {
   static const String userKey = 'logged_user';
+  static const String usersKey = 'users';
   static const String favKey = 'favorites';
 
   static Future<void> saveUser(String username) async {
@@ -21,6 +22,41 @@ class SharedPrefService {
     await prefs.remove(userKey);
   }
 
+  static Future<void> registerUser(String username, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    Map<String, String> users = {};
+    String? usersJson = prefs.getString(usersKey);
+    if (usersJson != null) {
+      users = Map<String, String>.from(jsonDecode(usersJson));
+    }
+    users[username] = password;
+    await prefs.setString(usersKey, jsonEncode(users));
+  }
+
+  static Future<bool> isUserExist(String username) async {
+    final prefs = await SharedPreferences.getInstance();
+    String? usersJson = prefs.getString(usersKey);
+    if (usersJson != null) {
+      Map<String, String> users = Map<String, String>.from(
+        jsonDecode(usersJson),
+      );
+      return users.containsKey(username);
+    }
+    return false;
+  }
+
+  static Future<bool> checkLogin(String username, String password) async {
+    final prefs = await SharedPreferences.getInstance();
+    String? usersJson = prefs.getString(usersKey);
+    if (usersJson != null) {
+      Map<String, String> users = Map<String, String>.from(
+        jsonDecode(usersJson),
+      );
+      if (users[username] == password) return true;
+    }
+    return false;
+  }
+
   static Future<List<Restaurant>> getFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     final favJson = prefs.getStringList(favKey) ?? [];
@@ -32,6 +68,10 @@ class SharedPrefService {
   static Future<void> addFavorite(Restaurant restaurant) async {
     final prefs = await SharedPreferences.getInstance();
     final favList = prefs.getStringList(favKey) ?? [];
+    if (favList.any(
+      (item) => Restaurant.fromJson(jsonDecode(item)).id == restaurant.id,
+    ))
+      return;
     favList.add(jsonEncode(restaurant.toJson()));
     await prefs.setStringList(favKey, favList);
   }

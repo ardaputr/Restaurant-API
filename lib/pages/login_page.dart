@@ -12,14 +12,28 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   void _login() async {
-    final username = _usernameController.text.trim();
-    if (username.isNotEmpty) {
+    String username = _usernameController.text.trim();
+    String password = _passwordController.text.trim();
+
+    if (username.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Username dan password harus diisi!")),
+      );
+      return;
+    }
+    bool success = await SharedPrefService.checkLogin(username, password);
+    if (success) {
       await SharedPrefService.saveUser(username);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => HomePage()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Login gagal! Username atau password salah.")),
       );
     }
   }
@@ -46,6 +60,17 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
+              ),
+              SizedBox(height: 16),
+              TextField(
+                controller: _passwordController,
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                obscureText: true,
               ),
               SizedBox(height: 20),
               ElevatedButton(onPressed: _login, child: Text('Login')),
